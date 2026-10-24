@@ -128,14 +128,30 @@ def tool_identity(executable: str, stamp: int, probe: tuple[str, ...]) -> str:
     return digest([done.returncode, done.stdout.strip(), done.stderr.strip()])
 
 
+def git_bundled_openssl() -> str | None:
+    """Git for Windows 自带的那份 openssl。按 `git.exe` 的实际位置推导，不假设装在哪。
+
+    `scripts/test.ps1` 把这份放进测试进程的 PATH；这里跟上同一条判据，环境指纹才和
+    真正被跑的那份 openssl 对得上。Git 装在默认位置之外的盘符时，写死路径会让指纹
+    记成 `None`，与入口补进去的那一份对不上，记录因此永远覆盖不了这次验证。
+    """
+    executable = shutil.which("git")
+    if not executable:
+        return None
+    for parent in Path(executable).resolve().parents[:4]:
+        candidate = parent / "usr" / "bin" / "openssl.exe"
+        if candidate.is_file():
+            return str(candidate)
+    return None
+
+
 def tool_identities() -> dict[str, str | None]:
     """PATH 上外部工具的可执行身份；存在但启动受限时明确记作 unspawnable。"""
     tools = {}
     for name, probe in TOOL_PROBES:
         executable = shutil.which(name)
         if not executable and name == "openssl" and sys.platform == "win32":
-            bundled = Path("C:/Program Files/Git/usr/bin/openssl.exe")
-            executable = str(bundled) if bundled.is_file() else None
+            executable = git_bundled_openssl()
         if not executable:
             tools[name] = None
             continue
