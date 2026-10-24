@@ -445,8 +445,10 @@ class LeftoverProcessTests(_WorktreeCase):
     """找出工作树落点下还活着的进程：谁占着删不掉的目录、机器变卡时谁是自己的残留。"""
 
     def sleeper(self, cwd: Path) -> subprocess.Popen:
+        # 基础解释器，不走 venv 启动器：uv 装的 `python.exe` 是个中转进程，它自己留在
+        # 调用者的当前目录，真正带 cwd 的是它拉起的子进程。按启动器的 pid 找，找不到。
         cwd.mkdir(parents=True, exist_ok=True)
-        child = subprocess.Popen([sys.executable, "-c", "import sys; sys.stdin.read()"],
+        child = subprocess.Popen([sys._base_executable, "-c", "import sys; sys.stdin.read()"],
                                  cwd=cwd, stdin=subprocess.PIPE)
         deadline = time.monotonic() + 10
         while time.monotonic() < deadline:
@@ -457,7 +459,7 @@ class LeftoverProcessTests(_WorktreeCase):
         return child
 
     def stop(self, child: subprocess.Popen) -> None:
-        # EOF 让解释器自己退出；Windows venv 启动器也会等其子进程结束。
+        # EOF 让解释器自己退出。
         child.communicate(timeout=10)
 
     def test_a_process_working_in_a_worktree_is_listed_with_its_details(self):
