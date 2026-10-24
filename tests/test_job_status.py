@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -128,3 +129,47 @@ class JobStatusTests(unittest.TestCase):
             self.assertEqual(MODULE.write_back(doc, block), "替换了已有区块")
             self.assertEqual(doc.read_text(encoding="utf-8"), "before\n\n<!-- job-status:start -->\nfresh\n<!-- job-status:end -->\n\nafter\n")
             self.assertFalse(list(tmp_path.glob("*.tmp")))
+
+    def test_missing_ledger_degrades_to_unavailable(self) -> None:
+        """账本不存在时报「未取得」，不抛异常。
+
+        本脚本由收尾 hook 无人值守地跑，hook 的 traceback 没人盯着看；没有部署的机器
+        上每次收尾都会走到这里，宁可数字缺位也不能崩或编数。"""
+        with tempfile.TemporaryDirectory() as root:
+            tmp_path = Path(root)
+            block = MODULE.collect(tmp_path / "absent" / "ledger.db", tmp_path / "generated")
+            text = "\n".join(block)
+            self.assertIn("账本：未取得", text)
+            self.assertIn(str(tmp_path / "absent" / "ledger.db"), text)
+            self.assertIn("| `code-scrape.csv` | — | 未生成 | 番号刮削结果 |", text)
+            self.assertNotIn("- 资产 ", text, "账本打不开时不得出现账本数字")
+            self.assertTrue(text.endswith(MODULE.END), text[-60:])
+
+    def test_ledger_without_schema_degrades_to_unavailable(self) -> None:
+        """能连上但缺表的账本同样降级，而不是在查询处崩掉。"""
+        with tempfile.TemporaryDirectory() as root:
+            tmp_path = Path(root)
+            db = tmp_path / "ledger.db"
+            sqlite3.connect(db).close()
+            block = MODULE.collect(db, tmp_path / "generated")
+            text = "\n".join(block)
+            self.assertIn("账本：未取得", text)
+            self.assertNotIn("- 资产 ", text)
+
+    def test_collect_reports_ledger_numbers_when_available(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            tmp_path = Path(root)
+            db = tmp_path / "ledger.db"
+            conn = sqlite3.connect(db)
+            conn.executescript(
+                "CREATE TABLE asset (id TEXT, medium TEXT, location TEXT, snapshot_path TEXT,"
+                " duration REAL, code TEXT, studio TEXT);"
+                "CREATE TABLE asset_tag (asset_id TEXT, source TEXT);"
+                "INSERT INTO asset VALUES ('a1', 'video', 'local', NULL, 10.0, 'ABC-001', 'studio');"
+            )
+            conn.commit()
+            conn.close()
+            text = "\n".join(MODULE.collect(db, tmp_path / "generated"))
+            self.assertIn("- 资产 1 条，其中视频 1 条。", text)
+            self.assertIn("- 番号 1 个，其中 1 个有厂牌", text)
+            self.assertIn("| `code-scrape.csv` | — | 未生成 | 番号刮削结果 |", text)

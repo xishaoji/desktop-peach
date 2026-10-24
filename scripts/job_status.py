@@ -59,10 +59,68 @@ def _local(text: str) -> str:
     return moment.astimezone().isoformat(timespec="seconds")
 
 
-def collect(db_path: Path, generated: Path, state_path: Path | None = None) -> list[str]:
+def _ledger_lines(db_path: Path) -> list[str]:
+    """从账本现算进度数字；账本打不开或缺表时抛 `sqlite3.Error`，由 collect 降级。"""
     conn = _readonly(db_path)
-    one = lambda sql, *a: conn.execute(sql, a).fetchone()[0]
+    try:
+        one = lambda sql, *a: conn.execute(sql, a).fetchone()[0]
 
+        lines: list[str] = []
+        videos = one("SELECT count(*) FROM asset WHERE medium='video'")
+        lines.append(f"- 资产 {one('SELECT count(*) FROM asset')} 条，其中视频 {videos} 条。")
+
+        # 待抽帧必须报两个数。只报一个必然引起口径之争：`4740` 和 `10196` 看着互相
+        # 矛盾，其实一个是可执行量、一个是原始量，都对。
+        # 没有时长就算不出 seek 点，抽帧脚本处理不了，那些要先补 probe。
+        lines.append("- 待抽帧（可抽 / 缺时长待 probe / 合计）：")
+        for loc in SCANNABLE_LOCATIONS:
+            ready = one("SELECT count(*) FROM asset WHERE medium='video' AND location=? "
+                        "AND (snapshot_path IS NULL OR snapshot_path='') AND duration>0", loc)
+            blocked = one("SELECT count(*) FROM asset WHERE medium='video' AND location=? "
+                          "AND (snapshot_path IS NULL OR snapshot_path='') "
+                          "AND (duration IS NULL OR duration<=0)", loc)
+            lines.append(f"  - `{loc}`：{ready} / {blocked} / {ready + blocked}")
+        # 抽帧的瓶颈是流量不是时间；下面是带日期与条件的实测参考，不是当前状态。
+        lines.append("  抽帧流量参考（2026-08-15 实测）：PikPak 走代理 9 帧 163 MB / 13.7 秒，"
+                     "直连 30.5 MB / 64.2 秒——慢约 4.7 倍但流量少约 5 倍且不占代理预算；"
+                     "全量抽帧约 773 GB（代理口径），按创作者采样 88 板直连约 2.7 GB；"
+                     "115 直连一张九宫格约 285 MB。")
+
+        untagged = one("SELECT count(*) FROM asset WHERE medium='video' "
+                       "AND id NOT IN (SELECT asset_id FROM asset_tag)")
+        lines.append(f"- 无内容标签视频 {untagged} 条（占视频 {untagged/max(videos,1)*100:.0f}%）。")
+
+        sources = conn.execute(
+            "SELECT source,count(*) FROM asset_tag GROUP BY source ORDER BY 2 DESC").fetchall()
+        lines.append("- `asset_tag` 来源分布：" +
+                     "、".join(f"`{s}` {n}" for s, n in sources) + "。")
+
+        codes = one("SELECT count(DISTINCT code) FROM asset WHERE code>''")
+        with_studio = one("SELECT count(DISTINCT code) FROM asset WHERE code>'' AND studio>''")
+        lines.append(f"- 番号 {codes} 个，其中 {with_studio} 个有厂牌"
+                     f"（{with_studio/max(codes,1)*100:.0f}%）。")
+        return lines
+    finally:
+        conn.close()
+
+
+def _artifact_lines(generated: Path) -> list[str]:
+    """产物清单只看现场文件，不依赖账本；账本未取得时仍然照常统计。"""
+    lines = ["", "| 产物 | 行数 | 生成时间（本地） | 说明 |", "| --- | ---: | --- | --- |"]
+    for name, desc in ARTIFACTS.items():
+        path = generated / name
+        if not path.is_file():
+            lines.append(f"| `{name}` | — | 未生成 | {desc} |")
+            continue
+        rows = len(read_rows(path))
+        # mtime 本来就是本地时间，显式 astimezone 是为了和上面两处同一个时钟，
+        # 列宽放不下偏移量，所以时区写在表头里。
+        stamp = datetime.fromtimestamp(path.stat().st_mtime).astimezone().strftime("%m-%d %H:%M")
+        lines.append(f"| `{name}` | {rows} | {stamp} | {desc} |")
+    return lines
+
+
+def collect(db_path: Path, generated: Path, state_path: Path | None = None) -> list[str]:
     lines: list[str] = [START, "", "<!-- 由 scripts/job_status.py 生成，勿手改；数字现算于账本与产物 -->",
                         f"<!-- generated {datetime.now().astimezone().isoformat(timespec='minutes')} -->", ""]
 
@@ -75,57 +133,16 @@ def collect(db_path: Path, generated: Path, state_path: Path | None = None) -> l
                 f"{_local(str(event.get('at', 'unknown')))}。"
             )
         except (OSError, ValueError, TypeError):
-            lines.append("- 最近自动交接：状态文件不可读；本次账本数字仍已重新计算。")
+            lines.append("- 最近自动交接：状态文件不可读。")
 
-    videos = one("SELECT count(*) FROM asset WHERE medium='video'")
-    lines.append(f"- 资产 {one('SELECT count(*) FROM asset')} 条，其中视频 {videos} 条。")
+    try:
+        lines += _ledger_lines(db_path)
+    except sqlite3.Error as exc:
+        # 本脚本常由收尾 hook 无人值守地跑：账本缺失或损坏要降级成「未取得」，
+        # 宁可数字缺位，也不能把 traceback 抛给 hook 输出或拿推测的数字顶替。
+        lines.append(f"- 账本：未取得（`{db_path}`：{exc}）；账本数字缺位，产物清单仍按现场文件统计。")
 
-    # 待抽帧必须报两个数。只报一个必然引起口径之争：`4740` 和 `10196` 看着互相
-    # 矛盾，其实一个是可执行量、一个是原始量，都对。
-    # 没有时长就算不出 seek 点，抽帧脚本处理不了，那些要先补 probe。
-    lines.append("- 待抽帧（可抽 / 缺时长待 probe / 合计）：")
-    for loc in SCANNABLE_LOCATIONS:
-        ready = one("SELECT count(*) FROM asset WHERE medium='video' AND location=? "
-                    "AND (snapshot_path IS NULL OR snapshot_path='') AND duration>0", loc)
-        blocked = one("SELECT count(*) FROM asset WHERE medium='video' AND location=? "
-                      "AND (snapshot_path IS NULL OR snapshot_path='') "
-                      "AND (duration IS NULL OR duration<=0)", loc)
-        lines.append(f"  - `{loc}`：{ready} / {blocked} / {ready + blocked}")
-    # 抽帧的瓶颈是流量不是时间；下面是带日期与条件的实测参考，不是当前状态。
-    lines.append("  抽帧流量参考（2026-08-15 实测）：PikPak 走代理 9 帧 163 MB / 13.7 秒，"
-                 "直连 30.5 MB / 64.2 秒——慢约 4.7 倍但流量少约 5 倍且不占代理预算；"
-                 "全量抽帧约 773 GB（代理口径），按创作者采样 88 板直连约 2.7 GB；"
-                 "115 直连一张九宫格约 285 MB。")
-
-    untagged = one("SELECT count(*) FROM asset WHERE medium='video' "
-                   "AND id NOT IN (SELECT asset_id FROM asset_tag)")
-    lines.append(f"- 无内容标签视频 {untagged} 条（占视频 {untagged/max(videos,1)*100:.0f}%）。")
-
-    sources = conn.execute(
-        "SELECT source,count(*) FROM asset_tag GROUP BY source ORDER BY 2 DESC").fetchall()
-    lines.append("- `asset_tag` 来源分布：" +
-                 "、".join(f"`{s}` {n}" for s, n in sources) + "。")
-
-    codes = one("SELECT count(DISTINCT code) FROM asset WHERE code>''")
-    with_studio = one("SELECT count(DISTINCT code) FROM asset WHERE code>'' AND studio>''")
-    lines.append(f"- 番号 {codes} 个，其中 {with_studio} 个有厂牌"
-                 f"（{with_studio/max(codes,1)*100:.0f}%）。")
-    conn.close()
-
-    lines.append("")
-    lines.append("| 产物 | 行数 | 生成时间（本地） | 说明 |")
-    lines.append("| --- | ---: | --- | --- |")
-    for name, desc in ARTIFACTS.items():
-        path = generated / name
-        if not path.is_file():
-            lines.append(f"| `{name}` | — | 未生成 | {desc} |")
-            continue
-        rows = len(read_rows(path))
-        # mtime 本来就是本地时间，显式 astimezone 是为了和上面两处同一个时钟，
-        # 列宽放不下偏移量，所以时区写在表头里。
-        stamp = datetime.fromtimestamp(path.stat().st_mtime).astimezone().strftime("%m-%d %H:%M")
-        lines.append(f"| `{name}` | {rows} | {stamp} | {desc} |")
-
+    lines += _artifact_lines(generated)
     lines += ["", END]
     return lines
 
