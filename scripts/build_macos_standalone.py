@@ -106,9 +106,9 @@ def build(destination: Path, *, dmg: bool = True, target_arch: str | None = None
     info = plistlib.loads(info_path.read_bytes())
     info["LSMinimumSystemVersion"] = minimum
     info_path.write_bytes(plistlib.dumps(info))
-    subprocess.run(["codesign", "--force", "--sign", "-", str(app)], check=True)
-    # `--strict` 要求苹果开发者证书，与 ad-hoc 签名（`-`）不兼容；去掉 `--strict`
-    # 允许在没有证书的 fork 仓库里构建并完成功能验收。
+    # PyInstaller 打包后内层 framework/dylib 未被签名，需要 `--deep` 递归签所有组件；
+    # 没有开发者证书时用 ad-hoc（`-`），`--strict` 与 ad-hoc 不兼容所以去掉。
+    subprocess.run(["codesign", "--force", "--deep", "--sign", "-", str(app)], check=True)
     subprocess.run(["codesign", "--verify", "--deep", str(app)], check=True)
     result = {"app": str(app), "version": __version__, "commit": commit,
               "architecture": architecture, "minimum_macos": minimum}
