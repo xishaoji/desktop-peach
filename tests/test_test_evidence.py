@@ -162,11 +162,10 @@ class VerificationTests(unittest.TestCase):
 
     def test_known_python_file_execute_mode_requires_full(self):
         name = "src/peach/web_follow.py"
-        (self.repo / name).write_text("value = 1\n", encoding="utf-8")
-        self.git("add", "--", name)
-        self.git("commit", "-m", "test: fixture")
-        self.git("update-index", "--chmod=+x", name)
-        contents = runner.changed_contents(self.repo, "HEAD", [name])
+        # `git update-index --chmod=+x` 在 macOS CI 上（core.fileMode=false）静默无效，
+        # 用 mock 模拟 raw diff 以覆盖 mode change 路径，与 test_python_symlinks_require_full 一致。
+        with mock.patch.object(evidence, "git", return_value=":100644 100755"):
+            contents = runner.changed_contents(self.repo, "HEAD", [name])
         self.assertEqual(runner.scopes_for_changes([name], contents=contents)[0], ("full",))
 
     def test_python_symlinks_require_full_for_each_change_kind(self):
