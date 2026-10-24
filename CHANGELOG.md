@@ -21,6 +21,23 @@ Removed / Fixed / Security。
 
 ## [未发布]
 
+## [0.47.0] - 2026-10-24
+
+### 新增
+
+- **桌面**：托盘的「打开 Peach」改用本机已装的 Chrome 或 Edge 开独立窗口，窗口左侧栏底部提供「在浏览器中打开」；没装 Chromium 系浏览器时回落默认浏览器。
+- **馆藏**：新增「待处理视频」页，缺时长、播放异常与采集未完成的片子汇成一页，可以重新探测、按问题类型忽略或移入回收站。
+- **桌面**：提供双架构 macOS 独立应用与安装镜像，随统一发版一并构建和验收。
+
+### 修复
+
+- **账本**：维护脚本在账本打不开时报告「未取得」与原因，不再抛异常中断。
+- **配置**：简化媒体目录配置并统一说明文案。
+- **界面**：同级宽字形按控件高度保留视觉比例。
+- **界面**：提示说明在单行时与右侧按钮垂直居中。
+- **界面**：宽容器里的补全提示与操作并排显示，窄容器与手机仍换行。
+- **播放**：自动探测硬件后端并支持 Linux VAAPI 转码。
+
 ## [0.46.1] - 2026-10-19
 
 ### 新增
@@ -617,7 +634,8 @@ Removed / Fixed / Security。
 - **桌面**：独立包使用 UTF-8 启动日志。
 - **配置**：首次设置后的跳转目标取新鲜读到的 mDNS 名。
 
-[未发布]: https://github.com/peach-mitao/peach/compare/v0.46.1...HEAD
+[未发布]: https://github.com/xishaoji/desktop-peach/compare/v0.47.0...HEAD
+[0.47.0]: https://github.com/xishaoji/desktop-peach/compare/v0.46.1...v0.47.0
 [0.46.1]: https://github.com/peach-mitao/peach/compare/v0.45.0...v0.46.1
 [0.45.0]: https://github.com/peach-mitao/peach/compare/v0.43.0...v0.45.0
 [0.43.0]: https://github.com/peach-mitao/peach/compare/v0.42.0...v0.43.0
