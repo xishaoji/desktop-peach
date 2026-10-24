@@ -170,6 +170,7 @@ export interface ManagedOpenProps extends Record<ConfigurationPath, { section?: 
   '/taste': { onboarding: boolean };
   '/review': { category: string; readOnly: boolean; readOnlyMessage: string; writerUrl: string };
   '/data-cleanup': Record<string, never>;
+  '/pending-videos': Record<string, never>;
   '/duplicates': Record<string, never>;
   '/quality-goals': Record<string, never>;
   '/sources': Record<string, never>;

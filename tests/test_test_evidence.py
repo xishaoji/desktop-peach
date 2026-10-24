@@ -249,6 +249,30 @@ class VerificationTests(unittest.TestCase):
         with mock.patch.object(evidence.shutil, "which", return_value=None):
             self.assertNotEqual(evidence.environment(self.repo), broken)
 
+    def test_openssl_identity_follows_the_copy_the_entrypoint_runs(self):
+        """入口无条件把 Git 自带的 openssl 放到 PATH 最前面，指纹要跟着取同一份。
+
+        这台机器的 PATH 上还排着 anaconda 的 openssl，它缺 `openssl.cnf`，签不出项目
+        证书。指纹若按 PATH 取，入口里记的是 Git 那份、普通 shell 里记的是 anaconda
+        那份，同一棵树在两种 shell 下算出两个键，记录就覆盖不了验证。
+        """
+        if sys.platform != "win32":
+            self.skipTest("只有 Windows 入口会补 Git 自带的 openssl")
+        bundled = evidence.git_bundled_openssl()
+        self.assertIsNotNone(bundled, "Git for Windows 应当自带 openssl")
+        elsewhere = r"C:\elsewhere\openssl.exe"
+        real_which = evidence.shutil.which
+
+        def which(name):
+            # `git` 照常解析：回退靠它的真实位置推导，拦掉就测不到这条判据。
+            return real_which(name) if name == "git" else elsewhere
+
+        with mock.patch.object(evidence.shutil, "which", side_effect=which):
+            self.assertEqual(evidence.resolve_tool("openssl"), bundled)
+        with mock.patch.object(evidence, "git_bundled_openssl", return_value=None), \
+                mock.patch.object(evidence.shutil, "which", return_value=elsewhere):
+            self.assertEqual(evidence.resolve_tool("openssl"), elsewhere)
+
     def test_unspawnable_tools_names_every_resolved_tool_blocked_by_permissions(self):
         """入口需要工具名来给出一条明确结论，不能等测试分片各自抛 CreateProcess。"""
         with mock.patch.object(evidence.shutil, "which", side_effect=lambda name: f"/tools/{name}"), \

@@ -15,6 +15,7 @@ import { DUPLICATES_KEY, fetchDuplicates } from '../duplicates/duplicates';
 import { LibraryProcessingCard } from '../library-processing/library-processing-card';
 import { MediaRepairCard } from '../media-repair/media-repair-card';
 import { fetchMediaSources, MEDIA_SOURCES_KEY } from '../media-sources';
+import { fetchPendingCounts, pendingBreakdown, PENDING_COUNTS_KEY } from '../pending-videos/pending-videos';
 import { fetchQualityGoals, QUALITY_GOALS_KEY } from '../quality-goals/quality-goals';
 import { queryClient } from '../query';
 import {
@@ -54,9 +55,10 @@ const QUALITY = spriteGlyph('sparkles');
 const DUPLICATES = spriteGlyph('file-stack');
 const JUNK = spriteGlyph('file-archive');
 const TRASH = spriteGlyph('trash');
+const PENDING = spriteGlyph('circle-alert');
 
-/* 扫描与采集跑完，库里多出来的东西会落进这三张读数：复核、高清版与重复文件。 */
-const PROCESSING_READINGS = [REVIEW_COUNTS_KEY, QUALITY_GOALS_KEY, DUPLICATES_KEY];
+/* 扫描与采集跑完，库里多出来的东西会落进这几张读数：复核、高清版、重复文件与待处理视频。 */
+const PROCESSING_READINGS = [REVIEW_COUNTS_KEY, QUALITY_GOALS_KEY, DUPLICATES_KEY, PENDING_COUNTS_KEY];
 const refreshReadings = () => {
   for (const queryKey of PROCESSING_READINGS) void queryClient.invalidateQueries({ queryKey, exact: true });
 };
@@ -65,6 +67,7 @@ export function DataCleanupPage({ toast, failure, open }: DataCleanupProps) {
   const review = useQuery({ queryKey: REVIEW_COUNTS_KEY, queryFn: ({ signal }) => fetchReviewCounts(signal) });
   const quality = useQuery({ queryKey: QUALITY_GOALS_KEY, queryFn: ({ signal }) => fetchQualityGoals(signal) });
   const duplicates = useQuery({ queryKey: DUPLICATES_KEY, queryFn: ({ signal }) => fetchDuplicates(signal) });
+  const pending = useQuery({ queryKey: PENDING_COUNTS_KEY, queryFn: ({ signal }) => fetchPendingCounts(signal) });
   const junk = useQuery({ queryKey: JUNK_KEY, queryFn: ({ signal }) => fetchJunkSummary(signal) });
   const trash = useQuery({ queryKey: TRASH_KEY, queryFn: ({ signal }) => fetchTrashSummary(signal) });
   const sources = useQuery({ queryKey: MEDIA_SOURCES_KEY, queryFn: ({ signal }) => fetchMediaSources(signal) });
@@ -93,6 +96,10 @@ export function DataCleanupPage({ toast, failure, open }: DataCleanupProps) {
             figure: `${Number(data.total || 0).toLocaleString()} 项在回收站`,
             meta: data.total ? `占用 ${fmtSize(data.bytes || 0)}` : '',
           }))} />
+        <EntryCard section="pending" label="待处理视频" icon={PENDING} open={open}
+          value={reading(pending, (data) => (Number(data.total || 0)
+            ? { figure: `${Number(data.total).toLocaleString()} 条待处理`, meta: pendingBreakdown(data) }
+            : { figure: '没有待处理项' }))} />
       </div>
       <div className="flex flex-col gap-4 max-cleanup-tight:gap-3">
         {/* 卡片和它的提示是两件东西，提示挂在卡片外面：`#libraryProcessing` 是这一格本身，

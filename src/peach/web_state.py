@@ -206,6 +206,8 @@ class WebContract:
             "PeachTimelineThumbnailJob", "timeline-thumbnails")
         self.resource_apply_job = self._job("PeachResourceApplyJob", "resource-apply")
         self.media_repair_job = self._job("PeachMediaRepairJob", "media-repair")
+        # 待处理视频页的「重新探测」：只补没探过的那些，按来源根串行。
+        self.pending_reprobe_job = self._job("PeachPendingReprobeJob", "pending-reprobe")
         # 整理（ADR-0039）：同一时间只跑一批，互斥由这个任务自己的键提供。
         self.organize_job = self._job("PeachOrganizeJob", "organize")
         self.follow_scheduler = None
@@ -348,6 +350,7 @@ class WebContract:
         self.want_job.stop()
         self.organize_job.stop()
         self.media_repair_job.stop()
+        self.pending_reprobe_job.stop()
         self.amane_bridge_job.stop()
         if hasattr(self, "jav_discovery_metadata"):
             self.jav_discovery_metadata.stop()

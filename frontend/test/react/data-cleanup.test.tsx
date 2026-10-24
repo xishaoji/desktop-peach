@@ -101,6 +101,14 @@ const pageRoutes = (sources: MediaSourcesData): Record<string, Route> => ({
   '/api/duplicates?limit=120': { total: 3, files: 8, reclaimable: 2 * 1073741824, groups: [] },
   '/api/ads?limit=1': { pending_total: 5, dismissed_total: 2, counts: { video: 4, url: 1 } },
   '/api/items?state=trash&limit=1': { total: 9, bytes: 3 * 1073741824 },
+  '/api/pending-videos?counts=1': {
+    items: [], counts: {}, kind: '', include_ignored: false, total: 4, reprobe: 1, blocked: 3, ignored_total: 0,
+    kinds: [
+      { kind: 'duration', label: '缺时长', total: 3, reprobe: 1, blocked: 2, ignored: 0 },
+      { kind: 'media', label: '播放异常', total: 1, reprobe: 0, blocked: 1, ignored: 0 },
+      { kind: 'processing', label: '采集未完成', total: 0, reprobe: 0, blocked: 0, ignored: 0 },
+    ],
+  },
   '/api/sources': sources,
   '/api/library-processing': { status: 'idle' },
   '/api/media-repair': IDLE_REPAIR,
@@ -145,7 +153,7 @@ describe('读数卡', () => {
       .toBe('视频 4 · 网址 1 · 已忽略 2');
   });
 
-  it('五张卡各读各的；点一张就换到那一页', async () => {
+  it('六张卡各读各的；点一张就换到那一页', async () => {
     const { host, open, server } = await openPage();
     expect(entry(host, 'review')?.textContent).toContain('18 条待复核');
     expect(entry(host, 'quality')?.textContent).toContain('7 个待升级');
@@ -154,8 +162,15 @@ describe('读数卡', () => {
     expect(entry(host, 'ads')?.textContent).toContain('5 个待判断');
     expect(entry(host, 'trash')?.textContent).toContain('9 项在回收站');
     expect(entry(host, 'trash')?.textContent).toContain('占用 3.0 GB');
-    for (const section of ['review', 'quality', 'duplicates', 'ads', 'trash'] as const) await click(entry(host, section));
-    expect(open.mock.calls.map(([section]) => section)).toEqual(['review', 'quality', 'duplicates', 'ads', 'trash']);
+    expect(entry(host, 'pending')?.textContent).toContain('4 条待处理');
+    // 只有真有东西的那几类进分项：0 条的那一类不写「采集未完成 0」。
+    expect(entry(host, 'pending')?.textContent).toContain('缺时长 3 · 播放异常 1');
+    expect(entry(host, 'pending')?.textContent).not.toContain('采集未完成');
+    for (const section of ['review', 'quality', 'duplicates', 'ads', 'trash', 'pending'] as const) {
+      await click(entry(host, section));
+    }
+    expect(open.mock.calls.map(([section]) => section))
+      .toEqual(['review', 'quality', 'duplicates', 'ads', 'trash', 'pending']);
     expect(server.unknown).toEqual([]);
   });
 

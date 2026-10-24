@@ -41,6 +41,7 @@ https://github.com/user-attachments/assets/a5610874-e611-41bb-be22-7d99f0d64b62
 - **追新作、找想看的**：按女优订阅新作，按口味发现作品，用「想要」清单留住待找的片子。
 - **云下载**：按番号查找资源或粘贴磁力，提交到 115 或 PikPak，落地后自动整理入库。
 - **浏览器添加 JAV**：在 JavDB、MissAV、Jable 等站点识别或选中番号，一键交给 Peach 云下载入库。[用户脚本](https://github.com/peach-mitao/peach-userscript)独立维护，见[安装与配对](docs/JAV_BROWSER.md)。
+- **待处理视频**：扫描后缺时长、播放异常与采集未完成的片子汇成一页，可以重新探测、按类忽略或移入回收站。
 - **口味**：结合观看、反馈、馆藏、浏览历史、书签与关注关系分析偏好。一次读取本机浏览器的历史和书签，也可导入 HTML 书签或 Chromium Bookmarks JSON；来源可停止读取或删除。见[口味数据来源](docs/TASTE_SOURCES.md)。
 
 观看记录、收藏和设置保存在本机。扫描不动原文件；手动整理先预览，可撤回上一批。
@@ -85,8 +86,8 @@ https://github.com/user-attachments/assets/a5610874-e611-41bb-be22-7d99f0d64b62
 ### Windows
 
 1. 从 [Releases](https://github.com/peach-mitao/peach/releases) 下载完整安装包 `Peach-<版本>-windows-x64-setup.exe`，双击安装，无需管理员权限；也可下载完整免安装包，解压后运行 `Peach.exe`。
-2. 浏览器打开首次设置页后，选择媒体目录和访问范围。
-3. 开始扫描，随后在浏览器里浏览和播放。
+2. 首次设置页会自己打开：装了 Chrome 或 Edge 时是独立的桌面窗口，没有时是默认浏览器。选择媒体目录和访问范围。
+3. 开始扫描，随后在桌面窗口或浏览器里浏览和播放；窗口左侧栏底部可以随时回到浏览器。
 
 完整安装包携带媒体工具，可离线安装；轻量安装包体积更小，安装时按需下载工具。
 

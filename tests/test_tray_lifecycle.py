@@ -149,10 +149,18 @@ class TrayLifecycleTests(unittest.TestCase):
 
 @unittest.skipUnless(os.name == "nt", "Windows 内核进程句柄")
 class WindowsWatchdogTests(TrayLifecycleTests):
+    """真起监视器与托盘子进程的那几条。
+
+    子进程会把 `tray-detached` 这类事件写进自己的日志目录，而目录由「从源码树向上找
+    `peach-data`」推出来——在隔离工作树里那会落到仓库外的共用落点上。所以每条都显式给
+    `PEACH_DATA_ROOT`，日志留在本用例的临时目录里。
+    """
+
     def test_native_lifecycle_arms_base_interpreter_and_disarms(self):
         item = lifecycle.Lifecycle(self.root, self.root, self.root, ROOT)
         try:
-            item.start()
+            with patch.dict(os.environ, {"PEACH_DATA_ROOT": str(self.root)}):
+                item.start()
             self.assertIsNone(item.guard.poll())
             self.assertTrue(item.path.with_suffix(".ready").exists())
         finally:
@@ -172,7 +180,8 @@ class WindowsWatchdogTests(TrayLifecycleTests):
                                argv=[sys.executable, "-c",
                                      "from pathlib import Path; Path(" + repr(str(marker)) + ").write_text('ok')"])
             self.save()
-            environment = {**os.environ, "PYTHONPATH": str(ROOT / "src")}
+            environment = {**os.environ, "PYTHONPATH": str(ROOT / "src"),
+                           "PEACH_DATA_ROOT": str(self.root)}
             guard = subprocess.Popen([sys.executable, "-m", "peach.tray_lifecycle", str(self.path)],
                                      env=environment, creationflags=subprocess.CREATE_NO_WINDOW)
             deadline = time.monotonic() + 10

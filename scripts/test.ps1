@@ -40,11 +40,24 @@ $env:PYTHONPATH = $SourceRoot
 $env:PYTHONIOENCODING = 'utf-8'
 
 # Git for Windows 自带项目证书测试所需的 OpenSSL，但默认不会把 usr\bin 放进
-# 用户 PATH。只对本次测试进程补齐，不修改系统或用户环境变量。
-if (-not (Get-Command openssl.exe -ErrorAction SilentlyContinue)) {
-    $GitOpenSslDir = 'C:\Program Files\Git\usr\bin'
-    if (Test-Path -LiteralPath (Join-Path $GitOpenSslDir 'openssl.exe') -PathType Leaf) {
-        $env:PATH = "$GitOpenSslDir;$env:PATH"
+# 用户 PATH。按已解析到的 git.exe 反推安装根目录，不写死某个盘符：装到 D: 的机器
+# 与默认的 C:\Program Files\Git 一样能用。只对本次测试进程补齐，不修改系统或用户环境。
+# 只要 Git 自带的那一份在就优先用它：PATH 上别的 openssl（例如 conda 那份）可能缺
+# openssl.cnf，`test_certs` 拿它签不出 CA。
+$GitExe = (Get-Command git.exe -ErrorAction SilentlyContinue).Source
+if ($GitExe) {
+    # `git.exe` 可能在 `cmd\` 也可能在 `mingw64\bin\`，逐级往上找带 `usr\bin\openssl.exe`
+    # 的那一层，退固定两级会在后者上算成 `mingw64`。
+    $GitRoot = Split-Path -Parent $GitExe
+    foreach ($Step in 1..4) {
+        $GitOpenSslDir = Join-Path $GitRoot 'usr\bin'
+        if (Test-Path -LiteralPath (Join-Path $GitOpenSslDir 'openssl.exe') -PathType Leaf) {
+            $env:PATH = "$GitOpenSslDir;$env:PATH"
+            break
+        }
+        $Parent = Split-Path -Parent $GitRoot
+        if (-not $Parent -or $Parent -eq $GitRoot) { break }
+        $GitRoot = $Parent
     }
 }
 

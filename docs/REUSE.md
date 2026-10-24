@@ -714,3 +714,9 @@ Python 复用 MIT 许可的 [Ruff](https://docs.astral.sh/ruff/) 0.17.0，版本
 站点强调色检查覆盖进度、焦点、选中态、操作按钮与流光：旧 `--feedback-success` 引用既有强调色色阶；RSS 订阅保留橙色，信息、成功、警告、错误、品牌与图表分类保留语义色。
 
 普通 Toast 与扫描任务卡共用 Agent Progress 外框，16px 半径由通知栈内的既有 token 解析，细边框与接触阴影分别复用 `border-button-default`、`elevation-xs`，不改变内容排版。浏览器回归核对桌面、手机和明暗主题下的外框一致性，并以同一任务、同一内容回放外框基线生成对比图。
+
+## 桌面窗口与待处理视频
+
+桌面窗口复用 `browser_transport.find_browser` 的浏览器选择、托盘 `setup_url`／`normal_url` 的地址判据、`routes_auth.query_auth_redirect` 与 `set_auth_cookie` 的一次性口令换会话，启动参数只有 `--app` 与 `--user-data-dir`。只驱动已装浏览器，不引 Electron、Tauri 或 WebView2（ADR-0065 已否决内嵌运行时，ADR-0114 记录本决策）；窗口身份用服务端下发的长期 cookie，不嗅探 UA。回到默认浏览器复用 `webbrowser.open`，入口端点沿用配置写入的本机连接判据。无新增依赖。
+
+待处理视频页不自建投影：缺时长读 `media_probe` 的未测判据，播放异常读 `web_media_repair` 的扫描缓存，采集未完成读库处理任务的 `issues.jsonl`；重新探测复用 `BackgroundJob` 与 `media_probe.probe_unmeasured(asset_ids=)`，忽略写既有 `review_decision` 表（`category='pending_video'`），移入回收站转调 `web_batch.w_batch` 的 `dispose`，撤销走 `restore`，永久删除仍只在回收站经 `purge_assets()`。页面拼装复用 `DataTable`、`SelectionDock`、`confirmModal` 与 `actionReceipt`。几处状态数字按 `peach-batch-jobs` 的约定分「可重新探测 / 需另走一步 / 合计」，被忽略的不计入待办。

@@ -781,6 +781,26 @@ def pick_folder(request: Request, body: dict[str, Any] = Body(default_factory=di
     return {"path": path}
 
 
+@router.post("/api/open-in-browser")
+def open_in_browser(request: Request, _args=Depends(require_auth)):
+    """把当前这一页交给运行 Peach 的这台电脑的默认浏览器。
+
+    桌面窗口里那种 `--app` 窗口自己既没有地址栏、也开不出一个带地址栏的窗口，所以
+    「在浏览器中打开」必须由服务端执行。只对本机连接开放：浏览器开在运行 Peach 的
+    电脑上，远程调用只会得到一句「请在运行 Peach 的电脑上打开」。
+
+    不带一次性口令：窗口里已经登录过，默认浏览器里那一份可能还是别的会话；带上
+    反而把口令写进另一个浏览器的历史（docs/OPERATIONS.md 的登录一节）。
+    """
+    from . import desktop_window
+
+    local_only(request)
+    same_origin(request)
+    config = settings_file.active()
+    url = desktop_window.open_in_default_browser(config)
+    return {"ok": True, "url": url}
+
+
 @router.post("/api/configuration")
 def save_configuration(request: Request, body: dict[str, Any] = Body(default_factory=dict),
                        _args=Depends(require_auth)):

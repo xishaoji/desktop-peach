@@ -2,10 +2,12 @@
 import { applicationEffects } from './effects';
 import { MEDIA_SOURCE_ICONS, moveGlidePane, wireAnchoredMenu } from '../ui-kit';
 import { api, esc, icon } from '../core';
-import { narrowShell, openDrawer, openSettings } from './layout.js';
+import { narrowShell, openDrawer, openSettings, probeRuntime } from './layout.js';
 import { openConfigurationSection } from './playlists.js';
 import { transitionTheme } from './../theme-transition';
 import { preferencesState } from './preferences.js';
+import { receiptsState } from './receipts.js';
+import { desktopWindow, subscribeShell } from './../shell/index';
 import { applyTheme } from './../appearance/theme';
 import { wireGlowButton } from './../appearance/glow';
 import { loadGlowPicker } from '../react/application-residents';
@@ -105,7 +107,32 @@ boardFoot.innerHTML=`<div class="board-theme-toggle" role="group" aria-label="�
    `#i-` 前缀的线条件。它和设置分区「界面」那一枚是同一个意思——这枚钮的弹层底部「详细
    设置」开的正是那一页，两处说的都是外观，同一个意思本来就只该有一枚字形。 */
 boardFoot.insertAdjacentHTML('beforeend',`<div class="board-foot-actions"><button type="button" class="board-glow-toggle" id="boardGlowBtn" aria-label="光晕配色" aria-haspopup="dialog" aria-expanded="false" aria-controls="boardGlowMenu"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ri-palette-line"/></svg><span class="board-glow-mark" aria-hidden="true"><span class="board-glow-mark-glow"></span><span class="board-glow-mark-accent"></span></span></button></div>`);
-boardFoot.querySelector('.board-foot-actions').append(document.querySelector('#settingsBtn'));
+const footActions=boardFoot.querySelector('.board-foot-actions');
+footActions.append(document.querySelector('#settingsBtn'));
+/* 「在浏览器中打开」只在托盘开的桌面窗口里出现：`--app` 窗口没有地址栏，开不出第二份带
+   地址栏的页面。判据由服务端给（`/healthz` 的 `desktop`，窗口第一次打开时种的 cookie），
+   页面不嗅探 UA；网页版与窗口是同一份页面，这一颗是唯一的区别。动作同样由服务端执行：
+   窗口自己调不动默认浏览器。 */
+const browserOpen=document.createElement('button');
+browserOpen.type='button';browserOpen.id='boardBrowserBtn';browserOpen.className='board-browser-open';
+browserOpen.setAttribute('aria-label','在浏览器中打开');browserOpen.title='在浏览器中打开';
+browserOpen.innerHTML=icon('external-link');browserOpen.hidden=true;
+footActions.prepend(browserOpen);
+effects.own(()=>browserOpen.remove());
+function syncBrowserOpen(){
+  browserOpen.hidden=!desktopWindow;
+  browserOpen.disabled=!desktopWindow;
+}
+syncBrowserOpen();
+const unsubscribeBrowserOpen=subscribeShell(syncBrowserOpen);effects.own(unsubscribeBrowserOpen);
+/* 启动就问一次：那颗键在首页也要能出现，不能等到进管理区。`probeRuntime` 问过就不再问。 */
+probeRuntime();
+effects.handler(browserOpen, 'onclick', async ()=>{
+  browserOpen.disabled=true;
+  try{await api('/api/open-in-browser',{method:'POST',body:'{}'})}
+  catch(error){if(effects.isActive)receiptsState.actionFailure('在浏览器中打开',error)}
+  finally{if(effects.isActive)browserOpen.disabled=false}
+});
 document.querySelector('#drawer').append(boardFoot);
 boardFoot.querySelectorAll('[data-board-theme]').forEach(button=>effects.handler(button, 'onclick', ()=>{if(button.getAttribute('aria-pressed')==='true')return;transitionTheme(button,()=>{preferencesState.appSettings.theme=button.dataset.boardTheme;preferencesState.saveSettings();applyTheme()})}));
 applyTheme();

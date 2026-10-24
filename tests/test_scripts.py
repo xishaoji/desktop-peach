@@ -33,6 +33,25 @@ ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS = ROOT / "migrations"
 
 
+def git_shell(name: str) -> str | None:
+    r"""Git for Windows 自带的 POSIX shell。按 `git.exe` 的实际位置推导，不假设装在哪。
+
+    WSL 的 `bash.exe` 与 Git 的 `bash.exe` 同名：这台机器上 PATH 里先命中的就是
+    `C:\Windows\system32\bash.exe`，它按 Linux 规则解析路径，跑 Windows 盘符下的脚本
+    只会得到「文件不存在」。Git 可能装在 `C:\Program Files\Git`，也可能在别的盘符，
+    而且 PATH 上命中的 `git.exe` 可能在 `cmd\` 也可能在 `mingw64\bin\`，所以从它往上
+    逐级找带 `bin\<name>` 的那一层，而不是写死一个路径。
+    """
+    executable = shutil.which("git")
+    if not executable:
+        return None
+    for parent in Path(executable).resolve().parents[:4]:
+        candidate = parent / "bin" / name
+        if candidate.is_file():
+            return str(candidate)
+    return None
+
+
 def load_script(name: str):
     """按路径加载 `scripts/<name>.py`。
 
@@ -514,7 +533,7 @@ class LocalTlsDirectoryTests(unittest.TestCase):
 
 class PosixTlsDirectoryTests(unittest.TestCase):
     def resolve_directory(self, root, override=""):
-        shells = ("/bin/sh", r"C:\Program Files\Git\bin\sh.exe", shutil.which("sh"))
+        shells = ("/bin/sh", git_shell("sh.exe"), shutil.which("sh"))
         shell = next((candidate for candidate in shells if candidate and Path(candidate).is_file()), None)
         if not shell:
             self.skipTest("需要 POSIX shell")
@@ -1844,9 +1863,9 @@ class OperationalScriptTests(unittest.TestCase):
         # `/bin/bash` 在 macOS 上就是那个 3.2；装了新版 bash 的机器两个都跑。
         # WSL 的 bash 不算：它按 Linux 规则解析路径，入口文件在 Windows 盘符下，
         # 被它执行只会得到「文件不存在」的假失败。Git for Windows 的 bash 在
-        # PATH 里可能排在 WSL 后面，这里把标准安装位置补上，按内核名筛一遍。
+        # PATH 里可能排在 WSL 后面，这里按 `git.exe` 的实际位置补上，按内核名筛一遍。
         shells = []
-        for path in ("/bin/bash", shutil.which("bash"), r"C:\Program Files\Git\bin\bash.exe"):
+        for path in ("/bin/bash", shutil.which("bash"), git_shell("bash.exe")):
             if not path or not Path(path).exists():
                 continue
             probe = subprocess.run([path, "-c", "uname -s"],

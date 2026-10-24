@@ -91,6 +91,7 @@ TRAY_SOURCES = (
     "src/peach/tray_lifecycle.py",
     "src/peach/tray_diagnostics.py",
     "src/peach/menubar.py",
+    "src/peach/desktop_window.py",
     "src/peach/versioning.py",
     "src/peach/sync.py",
     "src/peach/certs.py",
@@ -906,6 +907,7 @@ class SetupGate:
         load: Callable[[], object] = settings_file.load_config,
         popen: Callable[..., subprocess.Popen] = subprocess.Popen,
         open_browser: Callable[[str], object] = webbrowser.open,
+        open_window: Callable[..., object] | None = None,
     ) -> None:
         self.manager = manager
         self.config = config
@@ -914,6 +916,9 @@ class SetupGate:
         self._load = load
         self._popen = popen
         self._open_browser = open_browser
+        #: 桌面窗口（`desktop_window.open_window`）。给测试换成替身；缺省时现取，
+        #: 免得托盘 import 期就把浏览器探测跑一遍。
+        self._open_window = open_window
         #: 由各平台的托盘装上；默认丢掉，`SetupGate` 本身不认识通知机制。
         self.notify: Callable[[str, str], None] = lambda _message, _title: None
 
@@ -933,7 +938,24 @@ class SetupGate:
         return self.manager.status_summary()
 
     def open(self) -> None:
-        self._open_browser(self.open_url())
+        """打开 Peach：有 Chromium 系浏览器时开独立窗口，没有才回落默认浏览器。
+
+        窗口的形态、profile 与一次性登录都在 `desktop_window` 里，这一层只管「打开」。
+        `open_window` 会自己回落，所以这里不重复判断浏览器在不在。
+        """
+        opener = self._open_window
+        if opener is None:
+            from .desktop_window import open_window as opener
+        opened = opener(self.config, waiting=self._waiting, open_browser=self._open_browser)
+        if opened == "default" and not self._waiting:
+            self.notify("未找到 Chrome 或 Edge，已在默认浏览器打开。", "Peach")
+
+    def open_in_browser(self) -> None:
+        """在默认浏览器里打开同一页：桌面窗口左侧栏那颗「在浏览器中打开」的动作。"""
+        from .desktop_window import open_in_default_browser
+
+        open_in_default_browser(self.config, waiting=self._waiting,
+                                open_browser=self._open_browser)
 
     def poll(self) -> bool:
         """设置完成了就切到正常服务。返回这一轮有没有切。
@@ -1088,6 +1110,8 @@ class PeachTray:
             "Peach · 蜜桃",
             pystray.Menu(
                 pystray.MenuItem(lambda _item: self.gate.open_label(), self.open, default=True),
+                # 网页端入口：和桌面窗口里左侧栏那一颗是同一个动作，都交给默认浏览器。
+                pystray.MenuItem("在浏览器中打开", lambda *_: self.gate.open_in_browser()),
                 pystray.MenuItem("配置 Peach", lambda *_: webbrowser.open(self.gate.open_url() + "configuration")),
                 pystray.MenuItem(lambda _item: f"状态：{self.gate.status_line()}", pystray.Menu(
                     lambda: (
@@ -1633,6 +1657,8 @@ def run_macos_menu_bar(manager: "ServiceManager", gate: "SetupGate | None" = Non
         "Peach · 蜜桃",
         [
             (gate.open_label, gate.open),
+            # 与 Windows 托盘同一项：网页端入口交给默认浏览器。
+            ("在浏览器中打开", gate.open_in_browser),
             (lambda: f"状态：{gate.status_line()}", Submenu(lambda: [
                 *((line, None) for line in manager.status_details()),
                 (menu_text(f"地址：{gate.open_url()}"), gate.open),
@@ -1782,7 +1808,10 @@ def _main(argv: list[str] | None = None) -> int:
     instance = SingleInstance(config.directory("state") / "peach-tray.lock")
     if instance.is_running():
         if not args.silent:
-            webbrowser.open(setup_url(config) if waiting else normal_url(config))
+            # 托盘已经在跑：再点一次图标等于「打开 Peach」，与菜单里那一项同一个动作。
+            from .desktop_window import open_window
+
+            open_window(config, waiting=waiting)
         return 0
     try:
         if handoff_tray(sys.argv[1:] if argv is None else argv, PROJECT_ROOT):
@@ -1801,7 +1830,9 @@ def _main(argv: list[str] | None = None) -> int:
         instance.acquire()
     except AlreadyRunning:
         if not args.silent:
-            webbrowser.open(setup_url(config) if waiting else normal_url(config))
+            from .desktop_window import open_window
+
+            open_window(config, waiting=waiting)
         return 0
     try:
         # 日志按半年保留、按月切段，必须排在任何子进程打开日志之前：Windows 上被占着的

@@ -93,13 +93,16 @@ export function openDrawer(v){const drawer=$('#drawer'),restore=!v&&drawer.conta
 
 export function closeDrawerAfterNav(){if(narrowShell())openDrawer(false)}
 
-export function probeConfigurable(){
+/* 一次 `/healthz` 同时问两件本机事实：能不能改配置、这一页是不是托盘开的桌面窗口。
+   两者都只决定某一颗按钮露不露，页面本身一样。问到之前按「都不能」算；问过就不再问，
+   问失败留给下一次调用。 */
+export function probeRuntime(){
   if(runtimeConfigurable!==null)return;
-  writeShell({runtimeConfigurable:false});
+  writeShell({runtimeConfigurable:false,desktopWindow:false});
   api('/healthz').then(runtime=>{
-    writeShell({runtimeConfigurable:!!runtime.configurable});
+    writeShell({runtimeConfigurable:!!runtime.configurable,desktopWindow:!!runtime.desktop});
     if(runtimeConfigurable&&manageSection())buildManageBar();
-  }).catch(()=>{});
+  }).catch(()=>writeShell({runtimeConfigurable:null}));
 }
 
 export function openSettings(section='',fromRoute=false){
@@ -166,7 +169,7 @@ export function manageSection(){
 
 export function buildManageBar(){
   const current=manageSection();
-  probeConfigurable();
+  probeRuntime();
   // 管理区是行政界面，不该顶着首页的人物/厂牌横条和标签筛选。
   // 隐藏 tagbar 的同时同步 count 栏的吸顶偏移：它默认按「顶栏+筛选条」留位，
   // 筛选条不在时那个偏移会留出一条 58px 的缝，滚动内容从缝里穿出来。

@@ -55,6 +55,7 @@ class DetachedLaunchTests(unittest.TestCase):
         instance.return_value.acquire.assert_not_called()
 
     def test_existing_tray_opens_its_page_without_attempting_handoff(self):
+        from peach import desktop_window
         from peach.tray import main
         for waiting, silent in ((False, False), (True, False), (False, True)):
             with self.subTest(waiting=waiting, silent=silent), \
@@ -67,16 +68,17 @@ class DetachedLaunchTests(unittest.TestCase):
                     mock.patch("peach.tray.needs_setup", return_value=waiting), \
                     mock.patch("peach.tray.normal_url", return_value="https://peach.invalid") as normal, \
                     mock.patch("peach.tray.setup_url", return_value="http://peach.invalid/setup") as setup, \
-                    mock.patch("peach.tray.webbrowser.open") as browser:
+                    mock.patch.object(desktop_window, "open_window") as window:
                 instance.return_value.is_running.return_value = True
                 self.assertEqual(main(["--silent"] if silent else ["--show"]), 0)
             handoff.assert_not_called()
             instance.return_value.acquire.assert_not_called()
             if silent:
-                browser.assert_not_called()
+                window.assert_not_called()
             else:
-                browser.assert_called_once_with("http://peach.invalid/setup" if waiting else "https://peach.invalid")
-                (setup if waiting else normal).assert_called_once_with(config.return_value)
+                # 托盘已经在跑：再点一次图标开的是桌面窗口，不是又一个浏览器标签页。
+                window.assert_called_once_with(config.return_value, waiting=waiting)
+                (setup if waiting else normal).assert_not_called()
 
     def test_failed_handoff_stops_before_services_or_state_are_created(self):
         from peach.tray import main

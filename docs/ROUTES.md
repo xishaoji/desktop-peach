@@ -82,6 +82,7 @@
 | `/review` | 人工复核 |
 | `/data-cleanup` | 数据管理 |
 | `/duplicates` | 重复文件 |
+| `/pending-videos` | 待处理视频：缺时长、播放异常与采集未完成的清单 |
 | `/quality-goals` | 高清版目标 |
 | `/login` | 登录 |
 
@@ -107,5 +108,7 @@
 兼容跳转保留查询参数；后退前进的背景信息留在历史条目中。索引尾斜杠跳到无尾斜杠路径。
 
 `/api/*`、`/stream`、`/follow-stream`、封面、图片及其他媒体端点使用各自的服务契约。实体只读接口 `/api/entity`、`/api/photos` 支持 `kind` 加 `id`，也接受 `kind` 加 `name`。鉴权与本机写入权限由服务端检查。
+
+待处理视频的两个端点共用一个路径：`GET /api/pending-videos` 读清单（`kind` 只看一类，`include_ignored=1` 列出已忽略的，`counts=1` 只回读数），`POST /api/pending-videos` 按 `action` 执行忽略、恢复、重新探测、重试采集或移入回收站。桌面窗口里的「在浏览器中打开」是 `POST /api/open-in-browser`，只接受本机连接。
 
 启用接口文档时，`/docs`、`/docs/oauth2-redirect` 和 `/openapi.json` 是服务文档入口；首次运行表单由未配置状态下的首页展示。

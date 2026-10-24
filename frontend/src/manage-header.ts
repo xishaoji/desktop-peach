@@ -35,6 +35,7 @@ export interface ManageHeaderProps {
 export const MANAGE_CRUMB_PAGES: Readonly<Record<string, string>> = {
   '/junk-files': '垃圾文件',
   '/duplicates': '重复文件',
+  '/pending-videos': '待处理视频',
   '/review': '人工复核',
   '/trash': '回收站',
   '/quality-goals': '高清版',

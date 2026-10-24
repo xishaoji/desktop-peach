@@ -34,8 +34,8 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.gzip import DEFAULT_EXCLUDED_CONTENT_TYPES, GZipMiddleware
 
-from . import (__version__, browser_transport, feeds, tunnel, web_batch, web_contract,
-               web_feeds, web_follow, web_settings)
+from . import (__version__, browser_transport, desktop_window, feeds, tunnel, web_batch,
+               web_contract, web_feeds, web_follow, web_settings)
 from . import routes_api, routes_auth, routes_configuration, routes_jav_browser, routes_media, routes_pages, routes_subtitles
 from .buildinfo import frozen_build
 from .config import LOCATION_ROOT_DECLARATIONS, PeachSettings
@@ -567,6 +567,12 @@ def create_app(
                 # 这次请求的发起方能不能改这台机器的配置（独立包、回环地址）。它随调用方
                 # 变化，只决定管理菜单里「配置」显不显示；拒绝写入的判定在端点自己那里。
                 "configurable": routes_configuration.configurable(request),
+                # 这次请求是不是托盘开的桌面窗口发出来的（窗口第一次打开时种下的
+                # cookie，见 `desktop_window`）。页面据此在左侧栏底部露出「在浏览器中
+                # 打开」；网页版与窗口是同一份页面，这一条是唯一的区别，所以由服务端
+                # 下判断，不靠页面自己嗅探 UA。
+                "desktop": desktop_window.is_desktop_request(
+                    request.cookies.get(desktop_window.DESKTOP_COOKIE)),
                 "db": database_status(settings.db_path),
                 "ffmpeg": ffmpeg.source if ffmpeg else "unavailable",
                 "media_mounts": app.state.mount_reachability.summary(),

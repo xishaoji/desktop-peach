@@ -41,6 +41,7 @@ https://github.com/user-attachments/assets/a5610874-e611-41bb-be22-7d99f0d64b62
 - **Find your next watch**: subscribe to performers' new releases, discover titles based on your taste and save them to your want list.
 - **Cloud download**: search by video code or paste a magnet link, send it to 115 or PikPak and organize the downloaded video into your library automatically.
 - **Add JAV from your browser**: detect or select a video code on JavDB, MissAV, Jable and other sites, then send it to Peach for cloud download and library ingestion. The [userscript](https://github.com/peach-mitao/peach-userscript) is maintained independently; see [installation and pairing](docs/JAV_BROWSER.md).
+- **Pending videos**: after a scan, titles with a missing duration, playback problems or unfinished ingestion gather on one page where you can re-probe them, ignore a whole kind, or move them to the trash.
 - **Taste preferences**: combine viewing, feedback, your library, browser history, bookmarks and follows to understand your preferences. Read history and bookmarks from supported local browsers in one action, or import HTML bookmarks and Chromium Bookmarks JSON. Stop reading a source or remove it when needed. See [taste data sources](docs/TASTE_SOURCES.md).
 
 Watch history, favorites and settings stay on your computer. Scanning leaves original files untouched; manual organization offers a preview and an undo for the last batch.
@@ -85,8 +86,8 @@ Try search, filters and profiles in the [read-only demo](https://demo.peach.vide
 ### Windows
 
 1. Download the full installer, `Peach-<version>-windows-x64-setup.exe`, from [Releases](https://github.com/peach-mitao/peach/releases) and run it. No administrator rights needed. Alternatively, extract the full portable package and run `Peach.exe`.
-2. Choose media directories and access permissions on the setup page that opens in your browser.
-3. Start scanning, then browse and play in your browser.
+2. The setup page opens by itself: in a standalone desktop window when Chrome or Edge is installed, otherwise in your default browser. Choose media directories and access permissions.
+3. Start scanning, then browse and play in the desktop window or your browser; the bottom of the window's sidebar takes you back to the browser at any time.
 
 The full installer includes media tools for offline installation. The smaller lite installer downloads tools as needed during setup.
 

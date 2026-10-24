@@ -448,6 +448,13 @@ button,input,select,textarea{font-family:inherit}
 .board-library-menu[data-placement=right]{transform-origin:left}
 .board-sidebar-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none;padding:12px}
 .board-foot-actions{display:flex;align-items:center;gap:6px}
+/* 「在浏览器中打开」只在桌面窗口里出现，和这一排另外两枚穿同一身盒子：36×36、8px 圆角、
+   透明底、20px 字形。收起的侧栏里跟着竖排（同一排的 `column` 规则）。 */
+.board-browser-open{width:36px;height:36px;padding:0;display:grid;place-items:center;border:0;border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;flex:none}
+.board-browser-open svg{width:20px;height:20px;margin:0}
+.board-browser-open:hover{background:transparent;color:var(--ink)}
+.board-browser-open:focus-visible{outline:2px solid var(--tungsten);outline-offset:2px}
+.board-browser-open[hidden]{display:none}
 .board-foot-actions>#settingsBtn{width:36px;height:36px;padding:0;display:grid;place-items:center;border-radius:8px;background:transparent;flex:none}
 .board-foot-actions>#settingsBtn svg{width:20px;height:20px;margin:0}
 /* 「光晕配色」和它旁边的设置钮是同一排里的两枚图标键，所以穿同一身盒子：36×36、8px

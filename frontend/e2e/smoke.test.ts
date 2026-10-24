@@ -110,6 +110,11 @@ const ROUTES: readonly Route[] = [
     body: (page) => [heading(page, '#main', '重复文件'), page.locator('#stats').getByText('重复内容', { exact: true })],
   },
   {
+    // 演示库的 12 条片子都有时长、没跑过媒体修复，等到的是空态标题；汇总块只有真页面画。
+    path: '/pending-videos',
+    body: (page) => [heading(page, '#main', '待处理视频'), page.locator('[data-collection-summary]'), heading(page, '#stats', '没有待处理视频')],
+  },
+  {
     // 旧直达地址落到数据管理页的锚点上；骨架里那一段没有 `id`，带 `id` 的只有演示库配了根目录后的真卡片。
     path: '/resource-sync',
     body: (page) => [heading(page, '#main', '数据管理'), page.locator('#stats section#resource-sync')],
