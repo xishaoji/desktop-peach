@@ -112,6 +112,16 @@ class DesktopWindowTests(unittest.TestCase):
         self.assertEqual(kwargs["start_new_session"], desktop_window.sys.platform != "win32")
         self.assertEqual(logged.call_args.args, ("已用 %s 打开桌面窗口", "chrome.exe"))
 
+    def test_a_posix_path_browser_is_also_named_by_its_filename(self):
+        """macOS 上 find_browser 返回 POSIX 路径；名字取法和 Windows 路径一致。"""
+        popen = mock.Mock()
+        posix_exe = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+        with mock.patch.object(desktop_window, "find_browser", return_value=posix_exe), \
+                mock.patch.object(desktop_window.LOGGER, "info") as logged:
+            name = desktop_window.open_window(self.config, popen=popen)
+        self.assertEqual(name, "Google Chrome")
+        self.assertEqual(logged.call_args.args, ("已用 %s 打开桌面窗口", "Google Chrome"))
+
     def test_the_default_browser_entry_opens_the_plain_address(self):
         opened = []
         with mock.patch("peach.distribution.standalone", return_value=False):

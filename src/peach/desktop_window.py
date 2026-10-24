@@ -24,7 +24,7 @@ import logging
 import subprocess
 import sys
 import webbrowser
-from pathlib import Path, PurePath
+from pathlib import Path, PureWindowsPath
 from urllib.parse import urlsplit
 
 from . import access, auth
@@ -186,9 +186,11 @@ def open_window(config, *, waiting: bool = False, browser: str | None = None,
         LOGGER.warning("桌面窗口没能启动（%s），改用默认浏览器", error)
         open_browser(login_url(config, url))
         return "default"
-    # 只记浏览器文件名，不记地址：地址上带着一次性口令。
-    LOGGER.info("已用 %s 打开桌面窗口", PurePath(executable).name)
-    return PurePath(executable).name
+    # 只记浏览器文件名，不记地址：地址上带着一次性口令。浏览器路径两种形态都可能是
+    # Windows 路径，用 `PureWindowsPath` 取名，别让平台相关的 PurePath 在非 Windows 上
+    # 把反斜杠当普通字符、把整串当文件名。
+    LOGGER.info("已用 %s 打开桌面窗口", PureWindowsPath(executable).name)
+    return PureWindowsPath(executable).name
 
 
 def open_in_default_browser(config, *, waiting: bool = False,
