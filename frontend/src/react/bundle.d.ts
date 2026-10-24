@@ -431,8 +431,17 @@ export interface CoverCropProps {
   onSaved(box: CoverCropProps['box']): void;
 }
 
-/** 数据管理页顶上那排读数卡各通往哪一页。`ads` 是垃圾文件。 */
-export type DataCleanupSection = 'review' | 'quality' | 'duplicates' | 'ads' | 'trash';
+/** 数据管理页顶上那排读数卡各通往哪一页。`ads` 是垃圾文件，`pending` 是待处理视频。 */
+export type DataCleanupSection = 'review' | 'quality' | 'duplicates' | 'ads' | 'trash' | 'pending';
+
+/** 待处理视频页仍由遗留层提供的能力。 */
+export interface PendingVideosProps {
+  /** 打开作品详情（遗留层的整页视图）。 */
+  openItem(id: number): void;
+  /** 操作回执；给了 `undo` 就带一颗撤销键。 */
+  toast(message: string, options?: { undo?: () => Promise<void> }): void;
+  failure(action: string, error: unknown): void;
+}
 
 /** 数据管理页仍由遗留层提供的能力：回执和换页。 */
 export interface DataCleanupProps {

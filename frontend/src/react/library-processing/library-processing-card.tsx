@@ -117,7 +117,12 @@ function Outcome(
           </Note>
         : null}
       {settled?.status === 'complete'
-        ? <Note tone="success" title="处理完成">{receiptText(settled)}</Note>
+        /* 这一趟留下的问题不在这张卡上逐条处理：缺时长、播不动、采集没做完的三类都在
+           「待处理视频」那一页，那里能逐条重探、忽略或移入回收站，所以回执给一条入口。 */
+        ? <Note tone="success" title="处理完成"
+            action={<LinkButton href="/pending-videos" size="small" trailingIcon={RiArrowRightLine}>待处理视频</LinkButton>}>
+            {receiptText(settled)}
+          </Note>
         : null}
       {!processingActive(state) && notes
         ? <Note tone="neutral"

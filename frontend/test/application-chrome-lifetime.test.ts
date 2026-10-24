@@ -11,7 +11,7 @@ const probes = vi.hoisted(() => ({
 }));
 vi.mock('../src/core', () => ({ api: probes.api, esc: String, icon: () => '' }));
 vi.mock('../src/ui-kit', () => ({ MEDIA_SOURCE_ICONS: {}, moveGlidePane: vi.fn(), wireAnchoredMenu: probes.menus }));
-vi.mock('../src/application/layout.js', () => ({ narrowShell: () => false, openDrawer: probes.openDrawer, openSettings: vi.fn() }));
+vi.mock('../src/application/layout.js', () => ({ narrowShell: () => false, openDrawer: probes.openDrawer, openSettings: vi.fn(), probeRuntime: vi.fn() }));
 vi.mock('../src/application/playlists.js', () => ({ openConfigurationSection: vi.fn() }));
 vi.mock('../src/application/preferences.js', () => ({ preferencesState: probes.preferences }));
 vi.mock('../src/theme-transition', () => ({ transitionTheme: vi.fn() }));

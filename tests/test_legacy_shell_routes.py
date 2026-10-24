@@ -23,7 +23,7 @@ SETTINGS = FRONTEND_SRC / "history" / "settings-route.ts"
 FROZEN_ROUTES = frozenset({
     "/", "/trash", "/playlists", "/assets/:id", "/posts/:id",
     "/performers", "/creators", "/studios", "/agencies", "/tags", "/stats", "/taste",
-    "/review", "/data-cleanup", "/duplicates", "/resource-sync", "/quality-goals",
+    "/review", "/data-cleanup", "/duplicates", "/pending-videos", "/resource-sync", "/quality-goals",
     "/sources", "/follow", "/subscriptions", "/tasks", "/immerse", "/wall",
     "/settings/diagnostics", "/jav", "/works/:code", "/settings", "/settings/appearance",
     "/settings/playback", "/settings/jav", "/settings/search", "/settings/content",

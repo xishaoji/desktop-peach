@@ -33,6 +33,8 @@ export const ROUTE_META: Readonly<Record<string, RouteMeta>> = {
   '/taste': { section: 'taste', title: '口味', refresh: 'reopen' },
   '/review': { section: 'review', title: '人工复核', refresh: 'reopen' },
   '/data-cleanup': { section: 'cleanup', title: '数据管理' },
+  // 待处理视频与高清版同一个摆法：自己的管理区身份（侧栏直达、页头标题），层级上从数据管理进。
+  '/pending-videos': { section: 'pending', title: '待处理视频', refresh: 'reopen' },
   '/duplicates': { section: 'cleanup', title: '重复文件', refresh: 'reopen' },
   '/quality-goals': { section: 'quality', title: '高清版', refresh: 'reopen' },
   '/sources': { section: 'cleanup', title: '来源和凭证', refresh: 'reopen' },

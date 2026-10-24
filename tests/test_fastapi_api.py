@@ -1768,6 +1768,25 @@ class FastApiContractTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("ready", response.text)
 
+    async def test_the_window_marker_is_a_cookie_and_the_page_only_then_calls_itself_a_window(self):
+        """窗口第一次打开带 `desktop=1`：同一个 303 里种下长期 cookie，地址上不留记号。
+
+        网页版与窗口是同一份页面，唯一的区别就是这枚 cookie；`/healthz` 的 `desktop`
+        也只认它，所以普通浏览器里那颗「在浏览器中打开」不会出现。
+        """
+        from peach import desktop_window
+        await self.client.get("/?t=secret")
+        plain = await self.client.get("/healthz")
+        self.assertFalse(plain.json()["desktop"])
+        opened = await self.client.get("/?desktop=1")
+        self.assertEqual(opened.status_code, 303)
+        self.assertEqual(opened.headers["location"], "/")
+        cookie = opened.headers["set-cookie"]
+        self.assertIn(f"{desktop_window.DESKTOP_COOKIE}=1", cookie)
+        self.assertIn("HttpOnly", cookie)
+        windowed = await self.client.get("/healthz")
+        self.assertTrue(windowed.json()["desktop"])
+
     async def test_playback_time_requires_a_session_and_survives_page_navigation(self):
         denied = await self.client.get("/assets/1?t=42")
         self.assertEqual(denied.status_code, 303)
@@ -1927,7 +1946,7 @@ class FastApiContractTests(unittest.IsolatedAsyncioTestCase):
                      # 前端路由写好了不等于能直接打开：SPA 路径是逐条登记的，
                      # 漏登记时源码断言照样全绿，只有真的请求一次才会露出 404。
                      "/unseen", "/watch-later", "/flagged", "/junk-files",
-                     "/data-cleanup", "/duplicates", "/quality-goals", "/tasks",
+                     "/data-cleanup", "/duplicates", "/pending-videos", "/quality-goals", "/tasks",
                      "/assets/2?mix=1", "/assets/2?parts=1", "/assets/2?editions=1", "/playlists",
                      "/resource-sync", "/settings/diagnostics",
                      "/assets/1?playlist=1", "/follow", "/subscriptions",

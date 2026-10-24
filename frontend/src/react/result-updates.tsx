@@ -7,7 +7,9 @@ import { queryClient } from './query';
 
 const CATALOG = ['catalog-grid', 'catalog-folders', 'item', 'item-related', 'item-queue',
   'entity', 'entity-items', 'entity-photos', 'entity-route', 'index', 'stats',
-  'quality-goals', 'duplicates', 'orphan-records', 'trash-summary', 'junk-summary', 'immerse-list'];
+  'quality-goals', 'duplicates', 'orphan-records', 'trash-summary', 'junk-summary', 'immerse-list',
+  // 扫描与媒体修复跑完，缺时长与播不动的清单都会变，任务一结算就重读这一页。
+  'pending-videos'];
 const FOLLOW = ['follow-feed', 'follow-item', 'follow-manage', 'follow', 'entity', 'index'];
 const DISCOVERIES = ['feed-new', 'jav-discoveries', 'jav-detail', 'wants', 'index'];
 const READINGS: Record<string, string[]> = {

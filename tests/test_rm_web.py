@@ -1151,7 +1151,7 @@ class WebDataTests(unittest.TestCase):
             "/api/library-processing",
             "/api/library-processing/issues",
             "/api/media-processing",
-            "/api/thumbnail-jobs", "/api/timeline", "/api/media-repair",
+            "/api/thumbnail-jobs", "/api/timeline", "/api/media-repair", "/api/pending-videos",
             "/api/scraping", "/api/scraping/cover", "/api/scraping/amane-bridge",
             "/api/items", "/api/item", "/api/entity", "/api/entity/shapes", "/api/photos", "/api/photo-set",
             "/api/index", "/api/parts", "/api/editions", "/api/duplicates", "/api/quality-goals",
@@ -1175,6 +1175,7 @@ class WebDataTests(unittest.TestCase):
         self.assertEqual(set(rm_web.POST_HANDLERS), {
             "/api/downloads", "/api/downloads/cancel", "/api/downloads/postprocess",
             "/api/library-processing", "/api/thumbnail-jobs", "/api/media-repair",
+            "/api/pending-videos",
             "/api/media-processing",
             "/api/scraping/settings", "/api/scraping/check", "/api/scraping/cover",
             "/api/scraping/amane-bridge/check", "/api/scraping/amane-bridge/rebuild",

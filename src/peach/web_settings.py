@@ -33,7 +33,7 @@ DEFAULT_SIDEBAR_ORDER = (
 #: 发起的动作，常驻一格换来的是每次都要跳过它，所以归到这里等人自己加。
 OPTIONAL_SIDEBAR_KEYS = (
     "playlists", "immerse",
-    "stats", "review", "data-cleanup", "trash", "follow-manage", "quality",
+    "stats", "review", "data-cleanup", "pending", "trash", "follow-manage", "quality",
 )
 ALL_SIDEBAR_KEYS = frozenset(DEFAULT_SIDEBAR_ORDER) | frozenset(OPTIONAL_SIDEBAR_KEYS)
 SIDEBAR_KEY_ALIASES = {"ads": "data-cleanup", "dupes": "data-cleanup"}

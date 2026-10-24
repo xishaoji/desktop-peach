@@ -3,7 +3,7 @@
    两者都是从一条作品或一个索引里发起的动作，常驻一格换来的是每次都要跳过它。要它们的人在设置里加回来，
    键仍在壳的 `NAV_CATALOG` 里。两份清单与 `src/peach/web_settings.py` 的同名常量逐字比对（test_web_settings.py）。 */
 export const DEFAULT_SIDEBAR_ORDER: readonly string[] = ['', 'follow', 'jav', 'performers', 'tags', 'studios', 'flagged', 'manage'];
-export const OPTIONAL_SIDEBAR_KEYS: readonly string[] = ['playlists', 'immerse', 'stats', 'review', 'data-cleanup', 'trash', 'follow-manage', 'quality'];
+export const OPTIONAL_SIDEBAR_KEYS: readonly string[] = ['playlists', 'immerse', 'stats', 'review', 'data-cleanup', 'pending', 'trash', 'follow-manage', 'quality'];
 const KNOWN_SIDEBAR_KEYS = new Set([...DEFAULT_SIDEBAR_ORDER, ...OPTIONAL_SIDEBAR_KEYS]);
 /* 垃圾文件与重复文件两页并进了数据管理，存过的旧键换成它。 */
 const sidebarKeyAlias = (key: string) => (key === 'ads' || key === 'dupes' ? 'data-cleanup' : key);

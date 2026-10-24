@@ -127,6 +127,8 @@ it('启动只提交一次，进度用 GET 读回来，完成后给出回执与�
 
   expect(served.calls.map((call) => call.method)).toEqual(['POST', 'GET']);
   expect(host.querySelector('a[href="/review"]')).not.toBeNull();
+  // 这一趟留下的问题在待处理视频那一页逐条处理，回执给一条去处。
+  expect(host.querySelector('a[href="/pending-videos"]')?.textContent).toContain('待处理视频');
   expect(toast).toHaveBeenCalledTimes(1);
   const receipt = host.querySelector('[role="status"]');
   expect(receipt?.textContent).toContain('处理完成');

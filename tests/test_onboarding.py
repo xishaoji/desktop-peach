@@ -1194,6 +1194,26 @@ class StandaloneConfigurationTests(_Case):
             with self.client() as client:
                 self.assertEqual(client.post("/api/pick-folder", headers=headers, json={}).status_code, 409)
 
+    def test_opening_the_page_in_a_browser_happens_on_this_machine_only(self):
+        """窗口没有地址栏，所以把页面交给默认浏览器是服务端做的事：只有本机连接能触发。"""
+        from peach import desktop_window
+        headers = {"X-Token": "test-token"}
+        with mock.patch.object(desktop_window, "open_in_default_browser",
+                               return_value="http://127.0.0.1:9123/") as opened:
+            with self.client() as client:
+                response = client.post("/api/open-in-browser", headers=headers, json={})
+                self.assertEqual(response.status_code, 200, response.text)
+                self.assertEqual(response.json(), {"ok": True, "url": "http://127.0.0.1:9123/"})
+                opened.assert_called_once()
+                crossed = client.post("/api/open-in-browser", json={},
+                                      headers={**headers, "Origin": "https://example.org"})
+                self.assertEqual(crossed.status_code, 403)
+                self.assertEqual(client.post("/api/open-in-browser", json={}).status_code, 401)
+            with self.client(address="192.0.2.1") as client:
+                self.assertEqual(
+                    client.post("/api/open-in-browser", headers=headers, json={}).status_code, 403)
+            self.assertEqual(opened.call_count, 1)
+
     def test_standalone_tray_uses_its_own_binary_and_configured_loopback_port(self):
         import sys
         from peach.tray import _peach_executable, configured_service_specs, normal_url

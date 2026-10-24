@@ -75,6 +75,9 @@ export let followDetailReturnPath = '/follow';
 export let configurationRequestedSection = '';
 /** 本机能不能改配置（`/healthz` 的 `configurable`）：null 是还没问过，问到之前按不能算。 */
 export let runtimeConfigurable: boolean | null = null;
+/** 这一页是不是托盘开的桌面窗口（`/healthz` 的 `desktop`）。窗口底部多一颗「在浏览器中打开」，
+ *  网页版没有——两边是同一份页面，看不出来才正常。 */
+export let desktopWindow = false;
 /** 这一次是不是从设置完成页（或教程卡）进来的：口味页打开时取走，取一次就清。 */
 export let cameFromSetup = false;
 
@@ -121,6 +124,7 @@ export interface ShellFields {
   followScrollY: number;
   playlistsRevision: number;
   runtimeConfigurable: boolean | null;
+  desktopWindow: boolean;
   cameFromSetup: boolean;
 }
 
@@ -155,6 +159,7 @@ export function writeShell(patch: Partial<ShellFields>): void {
   if (has('followScrollY')) followScrollY = patch.followScrollY!;
   if (has('playlistsRevision')) playlistsRevision = patch.playlistsRevision!;
   if (has('runtimeConfigurable')) runtimeConfigurable = patch.runtimeConfigurable!;
+  if (has('desktopWindow')) desktopWindow = patch.desktopWindow!;
   if (has('cameFromSetup')) cameFromSetup = patch.cameFromSetup!;
   notifyShell();
 }

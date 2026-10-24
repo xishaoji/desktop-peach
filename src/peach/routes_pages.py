@@ -35,7 +35,7 @@ from fastapi.responses import (
     Response,
 )
 
-from . import distribution, onboarding, settings_file
+from . import desktop_window, distribution, onboarding, settings_file
 from .config import PROJECT_ROOT
 from .entities import resolve_entity, resolve_entity_id
 from .routes_auth import query_auth_redirect, require_asset_auth, require_page_auth, set_auth_cookie
@@ -225,9 +225,17 @@ def stylesheet_response(request: Request, web: Path) -> Response:
 def index(request: Request, args: dict[str, str] = Depends(require_page_auth)):
     settings = request.app.state.settings
     auth_target = query_auth_redirect(request)
-    if auth_target is not None:
-        response = RedirectResponse(auth_target, status_code=303)
+    window = desktop_window.wants_window(request)
+    if window or auth_target is not None:
+        # 地址上留着 `desktop`（窗口第一次打开）或 `t`（一次性口令）都要摘掉再跳一次：
+        # 两种记号都不该留在历史记录里，同一趟把两枚 cookie 都种下，不再多一次跳转。
+        # 口令那一段只摘「等于这次口令」的那几个参数，交给 `query_auth_redirect`
+        # 判；别的同名参数（播放时间 `t=42`）要原样留着。
+        target = auth_target if auth_target is not None else desktop_window.request_target(request)
+        response = RedirectResponse(
+            desktop_window.strip_query(target, {desktop_window.DESKTOP_QUERY}), status_code=303)
         set_auth_cookie(response, request)
+        desktop_window.set_desktop_cookie(response, request)
         return response
     if not settings.configured:
         # 未配置不是错误状态：服务照常起，首页（和任何前端路由的深链）变成首次运行页。
@@ -799,6 +807,7 @@ def entity_route(request: Request, name: str,
 @router.api_route("/review", methods=["GET", "HEAD"])
 @router.api_route("/taste", methods=["GET", "HEAD"])
 @router.api_route("/data-cleanup", methods=["GET", "HEAD"])
+@router.api_route("/pending-videos", methods=["GET", "HEAD"])
 @router.api_route("/duplicates", methods=["GET", "HEAD"])
 @router.api_route("/quality-goals", methods=["GET", "HEAD"])
 # 任务中心那一屏（island），数据走 `/api/tasks`。深链要能直接打开：定时任务被挡下时

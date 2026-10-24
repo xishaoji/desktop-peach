@@ -29,6 +29,8 @@ import { prefetchEntityPage, type EntityPageProps } from '../entity-page/entity-
 import { EntityPage } from '../entity-page/entity-page-view';
 import { prefetchDuplicates } from '../duplicates/duplicates';
 import { DuplicatesPage } from '../duplicates/duplicates-page';
+import { PendingVideosPage } from '../pending-videos/pending-videos-page';
+import { prefetchPending } from '../pending-videos/pending-videos';
 import { prefetchDiagnostics } from '../diagnostics/diagnostics';
 import { DiagnosticsPage } from '../diagnostics/diagnostics-page';
 import { prefetchFeedNew } from '../feed-new/feed-new';
@@ -95,9 +97,11 @@ type ResidentRouteTable = { [Name in ResidentName]: ManagedRoute<ResidentOpenPro
 export type RoutedPath =
   ManagedPath | BrowseRoutePath | IndexRoutePath | EntityRoutePath | CatalogPagePath | SurfaceName | ResidentName;
 
-/* 数据管理页读数卡的去处里，只有重复文件不按管理区身份找：它报的是数据管理的身份。 */
+/* 数据管理页读数卡的去处里，重复文件与待处理视频各有自己的页面，不按管理区身份找：它们
+   报的是数据管理的身份（面包屑上一级是数据管理），侧栏另有一格直达。 */
 function openCleanupSection(section: DataCleanupSection, actions: ShellActions, go: (path: string) => void) {
   if (section === 'duplicates') { go('/duplicates'); return }
+  if (section === 'pending') { go('/pending-videos'); return }
   const path = actions.managePath(section);
   if (isManagedPath(path)) go(path);
   else actions.openManage(section);
@@ -158,6 +162,14 @@ export const MANAGED_ROUTES: ManagedRouteTable = {
       <DataCleanupPage failure={actions.failure} open={(section) => openCleanupSection(section, actions, go)}
         toast={(message, { warning = false } = {}) => (
           warning ? actions.toast({ text: message }, { sound: 'warning' }) : actions.receipt(message))} />
+    ),
+  },
+  '/pending-videos': {
+    element: <ManagedMatch path="/pending-videos" />,
+    prefetch: (_open, signal) => prefetchPending(signal),
+    page: (_open, actions) => (
+      <PendingVideosPage openItem={actions.openItem} failure={actions.failure}
+        toast={(message, { undo } = {}) => actions.receipt(message, undo ? { undo } : {})} />
     ),
   },
   '/duplicates': {

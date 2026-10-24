@@ -1,8 +1,8 @@
 /** 应用导航的完整词表；默认可见顺序由 sidebar 的持久偏好决定。 */
 export type SidebarKey = '' | 'performers' | 'studios' | 'tags' | 'jav' | 'flagged' | 'playlists'
-  | 'follow' | 'immerse' | 'manage' | 'stats' | 'taste' | 'review' | 'data-cleanup' | 'trash'
-  | 'follow-manage' | 'quality' | 'activity';
-export type ManagementKey = 'stats' | 'taste' | 'review' | 'cleanup' | 'trash' | 'follow'
+  | 'follow' | 'immerse' | 'manage' | 'stats' | 'taste' | 'review' | 'data-cleanup' | 'pending'
+  | 'trash' | 'follow-manage' | 'quality' | 'activity';
+export type ManagementKey = 'stats' | 'taste' | 'review' | 'cleanup' | 'pending' | 'trash' | 'follow'
   | 'quality' | 'activity' | 'configuration';
 export type NavigationItem<Key extends string = string> = readonly [key: Key, label: string, glyph: string];
 
@@ -24,6 +24,7 @@ export const MANAGE_SECTIONS = [
   ['taste', '口味', 'heart'],
   ['review', '人工复核', 'square-check-big'],
   ['cleanup', '数据管理', 'hard-drive'],
+  ['pending', '待处理视频', 'circle-alert'],
   ['trash', '回收站', 'trash'],
   ['follow', '关注管理', 'rss'],
   ['quality', '高清版', 'sparkles'],
@@ -40,6 +41,6 @@ export const OPTIONAL_SIDEBAR_ITEMS: readonly NavigationItem<SidebarKey>[] = MAN
     : [[key === 'follow' ? 'follow-manage' : key === 'cleanup' ? 'data-cleanup' : key, label, glyph]]);
 export const NAV_CATALOG: readonly NavigationItem<SidebarKey>[] = [...SIDEBAR_ITEMS, ...OPTIONAL_SIDEBAR_ITEMS];
 export const DIRECT_MANAGE_NAV: Readonly<Partial<Record<SidebarKey, ManagementKey>>> = {
-  stats: 'stats', review: 'review', 'data-cleanup': 'cleanup', trash: 'trash',
+  stats: 'stats', review: 'review', 'data-cleanup': 'cleanup', pending: 'pending', trash: 'trash',
   'follow-manage': 'follow', quality: 'quality', activity: 'activity',
 };
