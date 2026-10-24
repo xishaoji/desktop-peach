@@ -13,6 +13,7 @@ import io
 import json
 import os
 import sqlite3
+import sys
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -24,6 +25,9 @@ from peach.migrations import upgrade
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS = ROOT / "migrations"
+# test_runner 只在加载测试模块时把 tests 目录放上 sys.path；在用例运行期才导入
+# support 的这条用例要自己补，否则能否通过取决于同进程里是否有别的模块先导入过。
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
 class _ScanCase(unittest.TestCase):
