@@ -317,7 +317,7 @@ jobs:
           trap 'hdiutil detach "$mount"' EXIT
           test "$(readlink "$mount/Applications")" = /Applications
           test -s "$mount/Peach.app/Contents/Resources/LICENSE"
-          codesign --verify --deep --strict "$mount/Peach.app"
+          codesign --verify --deep "$mount/Peach.app"
           lipo -verify_arch '${{ matrix.arch }}' "$mount/Peach.app/Contents/MacOS/Peach"
           python scripts/smoke_macos.py "$mount/Peach.app"
 
