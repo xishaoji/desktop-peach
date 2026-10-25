@@ -70,6 +70,24 @@ def package_dmg(app: Path, destination: Path) -> Path:
     return destination
 
 
+def verify_dmg_seal(image: Path) -> None:
+    """构建机本地挂载镜像，对镜像里的应用做封印校验。
+
+    封印在源目录上校验通过、进了镜像却失败时，只有这里有完整细节
+    （`--verbose=4` 逐项列出 missing/invalid 的资源），发版验收机上只能看到一行摘要。
+    """
+    with tempfile.TemporaryDirectory(prefix="peach-dmg-verify-") as directory:
+        mount = Path(directory) / "Peach-install"
+        mount.mkdir()
+        subprocess.run(["hdiutil", "attach", str(image), "-readonly", "-nobrowse",
+                        "-mountpoint", str(mount)], check=True)
+        try:
+            subprocess.run(["codesign", "--verify", "--deep", "--verbose=4",
+                            str(mount / "Peach.app")], check=True)
+        finally:
+            subprocess.run(["hdiutil", "detach", str(mount)], check=True)
+
+
 def build(destination: Path, *, dmg: bool = True, target_arch: str | None = None) -> dict[str, str]:
     if sys.platform != "darwin":
         raise SystemExit("macOS 应用必须在 macOS 上构建")
@@ -115,6 +133,7 @@ def build(destination: Path, *, dmg: bool = True, target_arch: str | None = None
     if dmg:
         image = destination / f"Peach-{__version__}-macos-{architecture}.dmg"
         result["dmg"] = str(package_dmg(app, image))
+        verify_dmg_seal(image)
     # COLLECT 是 BUNDLE 的中间目录；只留下可分发的应用，避免重复占用与系统索引。
     shutil.rmtree(destination / "Peach")
     return result
